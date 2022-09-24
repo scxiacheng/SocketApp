@@ -132,6 +132,68 @@ void CSenderDlg::AddProtocolTypes()
 DWORD __stdcall CSenderDlg::SendThread(LPVOID lpParam)
 {
 	CSenderDlg* pSenderDlg = (CSenderDlg*)lpParam;
-	
+	char szIP[MAX_PATH] = {0x0};
+	char szPort[MAX_PATH] = {0x0};
+
+	AfxSocketInit();
+
+	pSenderDlg->GetServerIp(szIP, MAX_PATH);
+	pSenderDlg->GetServerPort(szPort, MAX_PATH);
+	UINT uPort = atoi(szPort);
+
+	switch (pSenderDlg->m_SockType)
+	{
+	case SOCKET_TYPES::STREAM:break;
+	case SOCKET_TYPES::DGRAM:break;
+	}
+
+	switch (pSenderDlg->m_ProtocolType)
+	{
+	case PROTOCOL_TYPES::TCP:break;
+	case PROTOCOL_TYPES::UDP:break;
+	}
+
+	if (!pSenderDlg->m_ClientSocket.Create())
+	{
+		return 0;
+	}
+
+	if (!pSenderDlg->m_ClientSocket.Connect(szIP, uPort))
+	{
+		pSenderDlg->m_ClientSocket.Close();
+		return 0;
+	}
+
+	CSocketFile socketFile(&pSenderDlg->m_ClientSocket);
+	CArchive archiveStore(&socketFile, CArchive::store), archiveLoad(&socketFile, CArchive::load);
+
+	char szDataSend[MAX_PATH] = {0x0};
+	pSenderDlg->GetDlgItemText(IDC_EDIT_DATABESEND, szDataSend, MAX_PATH);
+
+	archiveStore.Write(szDataSend, strlen(szDataSend));
+	archiveStore.Flush();
+	archiveStore.Close();
+
+	char szDataRecive[MAX_PATH] = { 0x0 };
+	archiveLoad.Read(szDataRecive, MAX_PATH);
+	archiveLoad.Close();
+	pSenderDlg->SetDlgItemText(IDC_EDIT_DATARECIVED, szDataRecive);
+
+	socketFile.Close();
+	pSenderDlg->m_ClientSocket.Close();
 	return 0;
+}
+
+char* CSenderDlg::GetServerIp(char* szIP, size_t len)
+{
+	BYTE ip[4] = { 0x0 };
+	m_ServerIpAddress.GetAddress(ip[0], ip[1], ip[2], ip[3]);
+	sprintf_s(szIP, len, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	return szIP;
+}
+
+char* CSenderDlg::GetServerPort(char* szPort, size_t len)
+{
+	GetDlgItem(IDC_EDIT_SERVERPORT)->GetWindowText(szPort, len);
+	return szPort;
 }

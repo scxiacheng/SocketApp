@@ -63,5 +63,6 @@ private:
 
 private:
 	static DWORD WINAPI SendThread(LPVOID lpParam);
-	
+	char* GetServerIp(char* szIP, size_t len);
+	char* GetServerPort(char* szPort, size_t len);
 };
